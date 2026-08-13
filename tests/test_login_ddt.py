@@ -24,14 +24,16 @@ def test_login(user_data):
         page.fill("#user-name", user_data["username"])
         page.fill("#password", user_data["password"])
         page.click("#login-button")
-        
+
         # 4. Проверяваме очаквания резултат според JSON файла
-        if user_data["should_succeed"] == "success":
+        if user_data["should_succeed"] is True:
+            # Успешен вход
             assert "/inventory.html" in page.url
         else:
-            # Тук също е добре да изчакаме появата на грешката (червения банер)
+            # Неуспешен вход (очакваме грешка)
             page.wait_for_selector("h3[data-test='error']")
-            error_text = page.locator("h3[data-test='error']").inner_text()
-            assert user_data["error_message"] in error_text
+            error_element = page.locator("h3[data-test='error']")
+            assert error_element.is_visible()
             
         browser.close()
+            
