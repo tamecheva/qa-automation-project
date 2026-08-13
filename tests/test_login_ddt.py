@@ -26,7 +26,7 @@ def test_login(user_data):
         page.click("#login-button")
         
         # 4. Проверяваме очаквания резултат според JSON файла
-        if user_data["expected_outcome"] == "success":
+        if user_data["should_succeed"] == "success":
             assert "/inventory.html" in page.url
         else:
             # Тук също е добре да изчакаме появата на грешката (червения банер)
