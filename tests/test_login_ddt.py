@@ -1,47 +1,37 @@
-# test_login_ddt.py
-import json
+import pytest
 from playwright.sync_api import sync_playwright
+import json
 
-# Функция за четене на външните тестови данни
-def load_test_data():
-    with open("login_data.json", "r", encoding="utf-8") as f:
-        return json.load(f)
+# Зареждане на данните от JSON файла
+with open("users_data.json", "r", encoding="utf-8") as f:
+    test_data = json.load(f)
 
-def run_data_driven_tests():
-    test_cases = load_test_data()
-    
+# Генериране на параметри за pytest от JSON масива
+@pytest.mark.parametrize("user_data", test_data)
+def test_login(user_data):
     with sync_playwright() as p:
+        # Важно: Уверете се, че headless=True за GitHub Actions
         browser = p.chromium.launch(headless=True)
-        context = browser.new_context()
-        page = context.new_page()
+        page = browser.new_page()
         
-        for index, data in enumerate(test_cases, start=1):
-            print(f"\n--- Изпълнение на сценарий #{index} ---")
-            print(f"Потребител: {data['username']} | Очакван успех: {data['should_succeed']}")
+        # 1. Отиваме на страницата на SauceDemo
+        page.goto("https://www.saucedemo.com/")
+        
+        # 2. ТУК СЛАГАМЕ ИЗЧАКВАНЕТО (преди да започнем да пишем в полетата)
+        page.wait_for_selector("#user-name")
+        
+        # 3. Въвеждаме данните от JSON масива
+        page.fill("#user-name", user_data["username"])
+        page.fill("#password", user_data["password"])
+        page.click("#login-button")
+        
+        # 4. Проверяваме очаквания резултат според JSON файла
+        if user_data["expected_outcome"] == "success":
+            assert "/inventory.html" in page.url
+        else:
+            # Тук също е добре да изчакаме появата на грешката (червения банер)
+            page.wait_for_selector("h3[data-test='error']")
+            error_text = page.locator("h3[data-test='error']").inner_text()
+            assert user_data["error_message"] in error_text
             
-            # 1. Навигация до сайта
-            page.goto("https://www.saucedemo.com/")
-            
-            # 2. Въвеждане на данни
-            page.fill("#user-name", data["username"])
-            page.fill("#password", data["password"])
-            page.click("#login-button")
-            
-            if data["should_succeed"]:
-                # Проверка при успешен вход (очакваме да зареди инвентара)
-                assert "/inventory.html" in page.url, f"Сценарий #{index} падна: Очакваше се успешен вход!"
-                print(f"Сценарий #{index}: Успешен вход (passed).")
-                
-                # Връщаме се назад или излизаме, за следващия тест
-                page.goto("https://www.saucedemo.com/")
-            else:
-                # Проверка при неуспешен вход (очакваме съобщение за грешка)
-                error_banner = page.locator("[data-test='error']")
-                assert error_banner.is_visible(), f"Сценарий #{index} падна: Липсва съобщение за грешка!"
-                print(f"Сценарий #{index}: Неуспешен вход, както беше очаквано (passed).")
-                
         browser.close()
-        print("\Всички Data-driven тестове приключиха успешно!")
-
-if __name__ == "__main__":
-    run_data_driven_tests()
