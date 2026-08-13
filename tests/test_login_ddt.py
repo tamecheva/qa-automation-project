@@ -3,7 +3,7 @@ from playwright.sync_api import sync_playwright
 import json
 
 # Зареждане на данните от JSON файла
-with open("users_data.json", "r", encoding="utf-8") as f:
+with open("login_data.json", "r", encoding="utf-8") as f:
     test_data = json.load(f)
 
 # Генериране на параметри за pytest от JSON масива
